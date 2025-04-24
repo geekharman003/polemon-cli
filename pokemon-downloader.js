@@ -1,6 +1,7 @@
 import inquirer from "inquirer";
 import fs from "fs/promises";
 import { error } from "console";
+import { stat } from "fs";
 
 console.log("---POKEMON DOWNLOADER---");
 
@@ -35,28 +36,42 @@ inquirer
         },
       ])
       .then((selectedOptions) => {
+        console.log(selectedOptions)
         const data = fetch(
           `https://pokeapi.co/api/v2/pokemon/${pokemon["pokemon name"]}`
         )
           .then((response) => response.json())
           .then((data) => {
-            console.log(data)
+            const statsObject = data.stats
+           const allStats = {};
+            statsObject.forEach((statData)=>{
+              if(statData.stat.name && statData.base_stat){
+              const key = statData.stat.name
+              allStats[key] = statData.base_stat
+              }
+            })
             if (selectedOptions.options.includes("Stats")) {
-              fs.mkdir(`${pokemon["pokemon name"]}`); //makes the folder with the selected pokemon name
-              fs.writeFile(
-                //makes the stats.txt file
-                `${pokemon["pokemon name"]}/Stats.txt`,
-                `hello`,
-                function (err) {
-                  if (err) throw error();
-                  console.log("file saved");
-                }
-              );
+              loadStats(pokemon);
             }
           });
       });
-
-    // fetch(`https://pokeapi.co/api/v2/pokemon/${answers["pokemon name"]}`)
-    //   .then((response) => response.json())
-    //   .then((pokemonData) => console.log(pokemonData.stats));
   });
+
+
+  function loadStats(pokemon){
+    fs.mkdir(`${pokemon["pokemon name"]}`); // makes the folder with the selected pokemon name
+    fs.writeFile(
+      //makes the stats.txt file
+      `${pokemon["pokemon name"]}/Stats.txt`,
+      JSON.stringify(allStats, null, 2),
+      function (err) {
+        if (err) throw error();
+        console.log("file saved");
+      }
+    );
+  }
+
+
+  function loadSprites(pokemon) {}
+
+  function loadArtwork(pokemon) {}
