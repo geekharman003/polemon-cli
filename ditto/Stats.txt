@@ -1,8 +1,0 @@
-{
-  "hp": 48,
-  "attack": 48,
-  "defense": 48,
-  "special-attack": 48,
-  "special-defense": 48,
-  "speed": 48
-}
