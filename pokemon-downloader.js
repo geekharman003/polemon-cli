@@ -41,13 +41,27 @@ inquirer
         )
           .then((response) => response.json())
           .then((data) => {
-            if (selectedOptions.options.includes("Stats")) {
+            if(selectedOptions.options.includes("Sprites") && selectedOptions.options.includes("Stats") && selectedOptions.options.includes("Artwork")) {
               loadStats(pokemon, data);
-            } else if (selectedOptions.options.includes("Sprites")) {
+              loadSprites(pokemon,data);
+              loadArtwork(pokemon,data);
+            } 
+            else if (selectedOptions.options.includes("Stats") && selectedOptions.options.includes("Sprites")) {
+              loadStats(pokemon,data)
               loadSprites(pokemon, data);
-            } else if (selectedOptions.options.includes("Artwork")) {
+            }
+             else if (selectedOptions.options.includes("Stats") && selectedOptions.options.includes("Artwork")) {
+              loadStats(pokemon,data)
               loadArtwork(pokemon, data);
             }
+            else if(selectedOptions.options.includes("Sprites") && selectedOptions.options.includes("Artwork")){
+              loadSprites(pokemon,data)
+              loadArtwork(pokemon,data)
+            }
+            else if(selectedOptions.options.includes("Sprites")){
+             loadSprites(pokemon,data);
+            }
+            
           });
       });
   });
@@ -61,7 +75,11 @@ function loadStats(pokemon, data) {
       allStats[key] = statData.base_stat;
     }
   });
-  fs.mkdir(`${pokemon["pokemon name"]}`); // makes the folder with the selected pokemon name
+  fs.mkdir(`${pokemon["pokemon name"]}`,function(e){
+    if(e){
+      console.log(e.message)
+    }
+  }); // makes the folder with the selected pokemon name
   fs.writeFile(
     //makes the stats.txt file
     `${pokemon["pokemon name"]}/Stats.txt`,
@@ -77,24 +95,28 @@ function loadStats(pokemon, data) {
 function loadSprites(pokemon, data) {
   const path = pokemon["pokemon name"];
   const images = data.sprites;
-  // const bufferData = {
-  //   back_default : "",
-  //   back_shiny : "",
-  //   front_default : "",
-  //   front_shiny : "",
-  // };
-  console.log(images)
-  const { back_default, back_shiny, front_default, front_shiny } = images;
-  // console.log(back_default, back_shiny, front_default, front_shiny);
-  fs.mkdirSync(`${path}`);
-  Promise.all([back_default, back_shiny, front_default, front_shiny]).then(
-    (response) => {
-      response.forEach((res) => {
-        const buffer = Buffer.from(res);
-        fs.createWriteStream(`${path}/back_default.png`).write(buffer);
-      });
+
+  const imagesObject = {
+    back_default : images.back_default,
+    back_shiny : images.back_shiny,
+    front_default : images.front_default, 
+    front_shiny : images.front_shiny
+  }
+
+  fs.mkdir(`${path}`,function(e){
+    if(e){
+      console.log(e.message);
     }
-  );
+  });
+  
+  for(let entry in imagesObject){
+    fetch(imagesObject[entry])
+    .then((response) => response.arrayBuffer())
+    .then((bufferData) => {
+      const buffer = Buffer.from(bufferData);
+      fs.createWriteStream(`${path}/${entry}.png`).write(buffer)
+    })
+  }
 }
 
 function loadArtwork(pokemon, data) {
@@ -102,10 +124,16 @@ function loadArtwork(pokemon, data) {
   const artwork = data.sprites.other["official-artwork"].front_default;
   // console.log(artwork)
   fetch(artwork)
-    .then((response) => response.arrayBuffer())
+    .then((response) => { 
+      return response.arrayBuffer()
+    })
     .then((bufferData) => {
       const buffer = Buffer.from(bufferData);
-      fs.mkdirSync(`${path}`);
+      fs.mkdir(`${path}`,function(e){
+        if(e){
+          console.log(e.message)
+        }
+      });
       fs.createWriteStream(`${path}/original_artwork.png`).write(buffer);
     });
 }
