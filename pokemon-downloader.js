@@ -1,6 +1,7 @@
 import inquirer from "inquirer";
 import fs from "fs";
 import { error } from "console";
+import path from "path";
 // import { stat } from "fs";
 
 console.log("---POKEMON DOWNLOADER---");
@@ -61,12 +62,18 @@ inquirer
             else if(selectedOptions.options.includes("Sprites")){
              loadSprites(pokemon,data);
             }
-            
+            else if(selectedOptions.options.includes("Stats")){
+              loadStats(pokemon,data);
+            }
+            else if(selectedOptions.options.includes("Artwork")){
+              loadArtwork(pokemon,data);
+            }
           });
       });
   });
 
 function loadStats(pokemon, data) {
+  const path = pokemon["pokemon name"];
   const statsObject = data.stats;
   const allStats = {};
   statsObject.forEach((statData) => {
@@ -75,20 +82,16 @@ function loadStats(pokemon, data) {
       allStats[key] = statData.base_stat;
     }
   });
-  fs.mkdir(`${pokemon["pokemon name"]}`,function(e){
-    if(e){
-      console.log(e.message)
+
+  fs.access(`${path}`, function (bool) {
+    if(bool){
+        createFolder(path);
+        createStatsFile(path,allStats)
     }
-  }); // makes the folder with the selected pokemon name
-  fs.writeFile(
-    //makes the stats.txt file
-    `${pokemon["pokemon name"]}/Stats.txt`,
-    JSON.stringify(allStats, null, 2),
-    function (err) {
-      if (err) throw error();
-      // console.log("file saved");
+    else {
+      createStatsFile(path,allStats);
     }
-  );
+  })
 }
 
 
@@ -103,12 +106,55 @@ function loadSprites(pokemon, data) {
     front_shiny : images.front_shiny
   }
 
+  fs.access(`${path}`,function(bool){
+    if(bool){
+      createFolder(path);
+      createSpritesFiles(path,imagesObject);
+    }
+    else {
+      createSpritesFiles(path,imagesObject);
+    }
+  })
+  
+}
+
+function loadArtwork(pokemon, data) {
+  const path = pokemon["pokemon name"];
+  const artwork = data.sprites.other["official-artwork"].front_default;
+
+  fs.access(`${path}`,function(bool){
+    if(bool){
+     createFolder(path);
+     createOfficialArtWork(path,artwork)
+    }
+    else {
+    createOfficialArtWork(path,artwork)
+    }
+  })
+}
+ 
+
+const createFolder = (path) =>{
+  // makes the folder with the selected pokemon name
   fs.mkdir(`${path}`,function(e){
     if(e){
-      console.log(e.message);
+      return;
     }
-  });
-  
+  }); 
+}
+
+const createStatsFile = (path,allStats) => {
+  fs.writeFile(`${path}/Stats.txt`,  //creates the Stats.txt file
+    JSON.stringify(allStats, null, 2),
+    function (err) {
+      if (err) throw error();
+      // console.log("file saved");
+    }
+  );
+}
+
+
+const createSpritesFiles = (path,imagesObject) => {
   for(let entry in imagesObject){
     fetch(imagesObject[entry])
     .then((response) => response.arrayBuffer())
@@ -119,21 +165,13 @@ function loadSprites(pokemon, data) {
   }
 }
 
-function loadArtwork(pokemon, data) {
-  const path = pokemon["pokemon name"];
-  const artwork = data.sprites.other["official-artwork"].front_default;
-  // console.log(artwork)
+const createOfficialArtWork = (path,artwork) => {
   fetch(artwork)
-    .then((response) => { 
-      return response.arrayBuffer()
-    })
-    .then((bufferData) => {
-      const buffer = Buffer.from(bufferData);
-      fs.mkdir(`${path}`,function(e){
-        if(e){
-          console.log(e.message)
-        }
-      });
-      fs.createWriteStream(`${path}/original_artwork.png`).write(buffer);
-    });
+  .then((response) => { 
+    return response.arrayBuffer()
+  })
+  .then((bufferData) => {
+    const buffer = Buffer.from(bufferData);
+    fs.createWriteStream(`${path}/original_artwork.png`).write(buffer);
+  });
 }
