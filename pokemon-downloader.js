@@ -1,13 +1,15 @@
 import inquirer from "inquirer";
 import fs from "fs";
 import { error } from "console";
-import path from "path";
-// import { stat } from "fs";
+
 
 console.log("---POKEMON DOWNLOADER---");
 
-// getting the pokemon name from user
-inquirer
+
+// get required data input from user
+
+const getPokemonData = () =>{
+  inquirer
   .prompt([
     {
       type: "input",
@@ -37,7 +39,7 @@ inquirer
         },
       ])
       .then((selectedOptions) => {
-        const data = fetch(
+       fetch(
           `https://pokeapi.co/api/v2/pokemon/${pokemon["pokemon name"]}`
         )
           .then((response) => response.json())
@@ -46,6 +48,7 @@ inquirer
               loadStats(pokemon, data);
               loadSprites(pokemon,data);
               loadArtwork(pokemon,data);
+              
             } 
             else if (selectedOptions.options.includes("Stats") && selectedOptions.options.includes("Sprites")) {
               loadStats(pokemon,data)
@@ -59,18 +62,20 @@ inquirer
               loadSprites(pokemon,data)
               loadArtwork(pokemon,data)
             }
-            else if(selectedOptions.options.includes("Sprites")){
+            else if(selectedOptions.options.includes("Sprites")) {
              loadSprites(pokemon,data);
             }
-            else if(selectedOptions.options.includes("Stats")){
+            else if(selectedOptions.options.includes("Stats")) {
               loadStats(pokemon,data);
             }
-            else if(selectedOptions.options.includes("Artwork")){
+            else if(selectedOptions.options.includes("Artwork")) {
               loadArtwork(pokemon,data);
             }
-          });
+          })
       });
   });
+}
+
 
 function loadStats(pokemon, data) {
   const path = pokemon["pokemon name"];
@@ -153,7 +158,6 @@ const createStatsFile = (path,allStats) => {
   );
 }
 
-
 const createSpritesFiles = (path,imagesObject) => {
   for(let entry in imagesObject){
     fetch(imagesObject[entry])
@@ -161,10 +165,10 @@ const createSpritesFiles = (path,imagesObject) => {
     .then((bufferData) => {
       const buffer = Buffer.from(bufferData);
       fs.createWriteStream(`${path}/${entry}.png`).write(buffer)
+      console.log(`Saved: ${path}/${entry}.png`)
     })
   }
 }
-
 const createOfficialArtWork = (path,artwork) => {
   fetch(artwork)
   .then((response) => { 
@@ -174,4 +178,17 @@ const createOfficialArtWork = (path,artwork) => {
     const buffer = Buffer.from(bufferData);
     fs.createWriteStream(`${path}/original_artwork.png`).write(buffer);
   });
+}
+
+const checkAgain = () => {
+  inquirer.prompt([
+    {
+      type: "input",
+      name: "exit",
+      message: "would you like to search for another pokemon?"
+    }
+  ])
+  .then((answer) => {
+    console.log(answer)
+  })
 }
